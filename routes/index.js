@@ -9,6 +9,7 @@ router.get('/', (req, res) => {
 
 router.use('/authors', require('./authors'));
 router.use('/books', require('./books'));
+router.get('/login', [auth.basic], require('../controllers/login_controller.js'))
 router.use('/profile', [auth.basic], require('./profile'));
 router.use('/users', require('./users'));
 
