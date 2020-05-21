@@ -1,8 +1,12 @@
-/**
- * Profile Controller
- */
 
+
+/**
+ * Get the authenticated user's books
+ *
+ * GET /books
+ */
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const { matchedData, validationResult } = require('express-validator');
 const { User } = require('../models');
 
@@ -12,18 +16,24 @@ const { User } = require('../models');
  * GET /
  */
 const getProfile = async (req, res) => {
-	if (!req.user) {
-		res.status(401).send({
-			status: 'fail',
-			data: 'Authentication Required.',
-		});
-		return;
+	// retrieve authenticated user's profile
+	let user = null;
+	try {
+		user = await User.fetchById(req.user.data.id);
+	} catch (err) {
+		res.sendStatus(404);
+		throw err;
 	}
 
+	// send (parts of) user profile to requester
 	res.send({
 		status: 'success',
 		data: {
-			user: req.user,
+			user: {
+				username: user.get('username'),
+				first_name: user.get('first_name'),
+				last_name: user.get('last_name'),
+			},
 		}
 	});
 }
@@ -34,17 +44,18 @@ const getProfile = async (req, res) => {
  * GET /books
  */
 const getBooks = async (req, res) => {
-	if (!req.user) {
-		res.status(401).send({
-			status: 'fail',
-			data: 'Authentication Required.',
-		});
+	// query db for user and eager load the books relation
+	let user = null;
+	try {
+		user = await User.fetchById(req.user.data.id, { withRelated: 'books' });
+	} catch (err) {
+		console.error(err);
+		res.sendStatus(404);
 		return;
 	}
 
-	// query db for books this user has
-	await req.user.load('books');
-	const books = req.user.related('books');
+	// get this user's books
+	const books = user.related('books');
 
 	res.send({
 		status: 'success',
@@ -60,11 +71,13 @@ const getBooks = async (req, res) => {
  * PUT /
  */
 const updateProfile = async (req, res) => {
-	if (!req.user) {
-		res.status(401).send({
-			status: 'fail',
-			data: 'Authentication Required.',
-		});
+	// query db for user
+	let user = null;
+	try {
+		user = await User.fetchById(req.user.data.id);
+	} catch (err) {
+		console.error(err);
+		res.sendStatus(404);
 		return;
 	}
 
@@ -95,14 +108,8 @@ const updateProfile = async (req, res) => {
 	}
 
 	try {
-		const updatedUser = await req.user.save(validData);
-
-		res.send({
-			status: 'success',
-			data: {
-				user: updatedUser,
-			},
-		});
+		await user.save(validData);
+		res.sendStatus(204); // Successfully processed request but returned no content
 
 	} catch (error) {
 		res.status(500).send({

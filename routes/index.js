@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../controllers/middlewares/auth');
+const authController = require('../controllers/auth_controller');
 
 /* GET / */
 router.get('/', (req, res) => {
@@ -9,8 +10,16 @@ router.get('/', (req, res) => {
 
 router.use('/authors', require('./authors'));
 router.use('/books', require('./books'));
-router.get('/login', [auth.basic], require('../controllers/login_controller.js'))
-router.use('/profile', [auth.basic], require('./profile'));
+
+// add ability to login and get JWT access-token and refresh token
+router.post('/login', authController.login);
+
+// add ability to refresh a token
+router.post('/refresh', authController.refresh);
+
+// add ability to validate JWT's
+router.use('/profile', [auth.validateJwtToken], require('./profile'));
+
 router.use('/users', require('./users'));
 
 module.exports = router;
