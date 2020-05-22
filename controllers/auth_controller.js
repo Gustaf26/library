@@ -20,9 +20,11 @@ const login = async (req, res) => {
 
 	// construct jwt payload
 	const payload = {
-		sub: user.get('id'),
-		username: user.get('username'),
-	//	is_admin: user.get('is_admin'),
+
+		data : {
+		id: user.get('id'),
+		username: user.get('username')}
+	//	is_admin: user.get('is_admin'),}
 	};
 
 	// sign payload and get access-token
@@ -47,6 +49,7 @@ const login = async (req, res) => {
  */
 const refresh = (req, res) => {
 	const token = getTokenFromHeaders(req);
+	console.log(token)
 	if (!token) {
 		res.status(401).send({
 			status: 'fail',
@@ -57,11 +60,14 @@ const refresh = (req, res) => {
 
 	try {
 		// verify token using the refresh token secret
-		const payload = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
-		delete payload.iat; // issued at time
-		delete payload.exp; // expires at time
+		const { data } = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+		
+		//Construct new payload
 
-	
+		const payload =  {
+
+			data: data
+		}
 		// issue a new token using the access token secret
 		const access_token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: process.env.ACCESS_TOKEN_LIFETIME || '1h' });
 
@@ -94,6 +100,7 @@ const getTokenFromHeaders = (req) => {
 	// Split authorization header into its pieces
 	// "Bearer eyJhbGciOi[..]JtbLU"
 	const [authType, token] = req.headers.authorization.split(' ');
+	console.log(req.headers.authorization)
 
 	// Check that the Authorization type is Bearer
 	if (authType.toLowerCase() !== "bearer") {
