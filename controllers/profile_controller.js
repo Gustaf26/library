@@ -8,7 +8,36 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { matchedData, validationResult } = require('express-validator');
-const { User } = require('../models');
+const { User, Book } = require('../models');
+
+
+/**
+ * Add a book to the authenticated user's collection
+ *
+ * POST /books
+ * {
+ *   "book_id": 4
+ * }
+ */
+const addBook = async (req, res) => {
+
+		try {const book = await new Book({id:req.body.book_id}).fetch()
+
+		const user = await new User({id:req.user.data.id}).fetch()
+		
+	
+		const result = await user.books().attach(book)
+		console.log(result)
+
+		res.status(201).send({
+			status: 'success',
+			data: result
+		})
+		}
+		
+		catch(err) {res.status(404).send('Book not found')}
+
+}
 
 /**
  * Get authenticated user's profile
@@ -124,4 +153,5 @@ module.exports = {
 	getProfile,
 	getBooks,
 	updateProfile,
+	addBook
 }
